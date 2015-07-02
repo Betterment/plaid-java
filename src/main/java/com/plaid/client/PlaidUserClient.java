@@ -27,7 +27,11 @@ public interface PlaidUserClient {
 
     AccountsResponse achAuth(Credentials credentials, String type, ConnectOptions connectOptions) throws PlaidMfaException;
 
+    AccountsResponse updateAchAuth(Credentials credentials, String accessToken) throws PlaidMfaException;
+
     AccountsResponse mfaAuthStep(String mfa, String type) throws PlaidMfaException;
+
+    AccountsResponse updateMfaAuthStep(String mfa, String type) throws PlaidMfaException;
 
     AccountsResponse mfaAuthDeviceSelectionByDeviceType(String deviceType, String type) throws PlaidMfaException;
 
