@@ -85,6 +85,17 @@ public class DefaultPlaidUserClient implements PlaidUserClient {
     }
 
     @Override
+    public AccountsResponse updateAchAuth(Credentials credentials, String type, ConnectOptions connectOptions) throws PlaidMfaException {
+
+        Map<String, Object> requestParams = new HashMap<String, Object>();
+        requestParams.put("credentials", credentials);
+        requestParams.put("type", type);
+        requestParams.put("options", connectOptions);
+
+        return handlePatch("/auth", requestParams, AccountsResponse.class);
+    }
+
+    @Override
     public TransactionsResponse mfaConnectStep(String mfa, String type) throws PlaidMfaException {
 
         return handleMfa("/connect/step", mfa, type, TransactionsResponse.class);
@@ -304,6 +315,23 @@ public class DefaultPlaidUserClient implements PlaidUserClient {
         return handlePost(path, requestParams, returnTypeClass);
     }
 
+    private <T extends PlaidUserResponse> T handleMfaUpdate(String path, String mfa, String type, Class<T> returnTypeClass) throws PlaidMfaException {
+
+        if (StringUtils.isEmpty(accessToken)) {
+            throw new PlaidClientsideException("No accessToken set");
+        }
+
+        Map<String, Object> requestParams = new HashMap<String, Object>();
+
+        requestParams.put("mfa", mfa);
+
+        if (type != null) {
+            requestParams.put("type", type);
+        }
+
+        return handlePatch(path, requestParams, returnTypeClass);
+    }
+
     private <T extends PlaidUserResponse> T handlePost(String path, Map<String, Object> requestParams, Class<T> returnTypeClass) throws PlaidMfaException {
 
         PlaidHttpRequest request = new PlaidHttpRequest(path, authenticationParams(), timeout);
@@ -320,6 +348,34 @@ public class DefaultPlaidUserClient implements PlaidUserClient {
 
         try {
             HttpResponseWrapper<T> response = httpDelegate.doPost(request, returnTypeClass);
+
+            T body = response.getResponseBody();
+            setAccessToken(body.getAccessToken());
+            return body;
+
+        }
+        catch (PlaidMfaException e) {
+            setAccessToken(e.getMfaResponse().getAccessToken());
+            throw e;
+        }
+    }
+
+    private <T extends PlaidUserResponse> T handlePatch(String path, Map<String, Object> requestParams, Class<T> returnTypeClass) throws PlaidMfaException {
+
+        PlaidHttpRequest request = new PlaidHttpRequest(path, authenticationParams(), timeout);
+
+        for (String param : requestParams.keySet()) {
+            Object value = requestParams.get(param);
+
+            if (value == null) {
+                continue;
+            }
+
+            request.addParameter(param, serialize(value));
+        }
+
+        try {
+            HttpResponseWrapper<T> response = httpDelegate.doPatch(request, returnTypeClass);
 
             T body = response.getResponseBody();
             setAccessToken(body.getAccessToken());

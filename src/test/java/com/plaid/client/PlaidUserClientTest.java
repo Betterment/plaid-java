@@ -100,6 +100,14 @@ public class PlaidUserClientTest {
         }
     }
 
+    @Test
+    public void testAchAuth() {
+        Credentials testCredentials = new Credentials("plaid_test", "plaid_good");
+        AccountsResponse response = plaidUserClient.achAuth(testCredentials, "amex", null);
+
+        assertEquals("test_amex",response.getAccessToken());
+        assertTrue(response.getAccounts().size() > 0);
+    }
 
     @Test
     public void testInfoWellsFargo() {
