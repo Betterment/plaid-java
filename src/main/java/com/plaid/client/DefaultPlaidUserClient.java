@@ -3,7 +3,6 @@ package com.plaid.client;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.plaid.client.response.MfaResponse;
 import org.apache.commons.lang.StringUtils;
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -96,18 +95,18 @@ public class DefaultPlaidUserClient implements PlaidUserClient {
     @Override
     public TransactionsResponse mfaConnectStep(String mfa, String type) throws PlaidMfaException {
 
-        return handleMfa("/connect/step", mfa, type, TransactionsResponse.class);
+        return handleMfaPost("/connect/step", mfa, type, TransactionsResponse.class);
     }
 
     @Override
     public AccountsResponse mfaAuthStep(String mfa, String type) throws PlaidMfaException {
 
-        return handleMfa("/auth/step", mfa, type, AccountsResponse.class);
+        return handleMfaPost("/auth/step", mfa, type, AccountsResponse.class);
     }
 
     @Override
     public AccountsResponse updateMfaAuthStep(String mfa, String type) throws PlaidMfaException {
-        return null;
+        return handleMfaPost("/auth/step", mfa, type, AccountsResponse.class);
     }
 
     @Override
@@ -301,7 +300,7 @@ public class DefaultPlaidUserClient implements PlaidUserClient {
          return handlePost("/info", requestParams, InfoResponse.class);
     }
 
-    private <T extends PlaidUserResponse> T handleMfa(String path, String mfa, String type, Class<T> returnTypeClass) throws PlaidMfaException {
+    private <T extends PlaidUserResponse> T handleMfaPost(String path, String mfa, String type, Class<T> returnTypeClass) throws PlaidMfaException {
 
         if (StringUtils.isEmpty(accessToken)) {
             throw new PlaidClientsideException("No accessToken set");
@@ -316,6 +315,23 @@ public class DefaultPlaidUserClient implements PlaidUserClient {
         }
 
         return handlePost(path, requestParams, returnTypeClass);
+    }
+
+    private <T extends PlaidUserResponse> T handleMfaPatch(String path, String mfa, String type, Class<T> returnTypeClass) throws PlaidMfaException {
+
+        if (StringUtils.isEmpty(accessToken)) {
+            throw new PlaidClientsideException("No accessToken set");
+        }
+
+        Map<String, Object> requestParams = new HashMap<String, Object>();
+
+        requestParams.put("mfa", mfa);
+
+        if (type != null) {
+            requestParams.put("type", type);
+        }
+
+        return handlePatch(path, requestParams, returnTypeClass);
     }
 
     private <T extends PlaidUserResponse> T handlePost(String path, Map<String, Object> requestParams, Class<T> returnTypeClass) throws PlaidMfaException {
