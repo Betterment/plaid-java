@@ -85,6 +85,15 @@ public class DefaultPlaidUserClient implements PlaidUserClient {
     }
 
     @Override
+    public AccountsResponse updateAchAuth(Credentials credentials, String accessToken) throws PlaidMfaException {
+        Map<String, Object> requestParams = new HashMap<String, Object>();
+        requestParams.put("credentials", credentials);
+        requestParams.put("access_token", accessToken);
+
+        return handlePatch("/auth", requestParams, AccountsResponse.class);
+    }
+
+    @Override
     public TransactionsResponse mfaConnectStep(String mfa, String type) throws PlaidMfaException {
 
         return handleMfa("/connect/step", mfa, type, TransactionsResponse.class);
@@ -94,6 +103,11 @@ public class DefaultPlaidUserClient implements PlaidUserClient {
     public AccountsResponse mfaAuthStep(String mfa, String type) throws PlaidMfaException {
 
         return handleMfa("/auth/step", mfa, type, AccountsResponse.class);
+    }
+
+    @Override
+    public AccountsResponse updateMfaAuthStep(String mfa, String type) throws PlaidMfaException {
+        return null;
     }
 
     @Override
@@ -320,6 +334,34 @@ public class DefaultPlaidUserClient implements PlaidUserClient {
 
         try {
             HttpResponseWrapper<T> response = httpDelegate.doPost(request, returnTypeClass);
+
+            T body = response.getResponseBody();
+            setAccessToken(body.getAccessToken());
+            return body;
+
+        }
+        catch (PlaidMfaException e) {
+            setAccessToken(e.getMfaResponse().getAccessToken());
+            throw e;
+        }
+    }
+
+    private <T extends PlaidUserResponse> T handlePatch(String path, Map<String, Object> requestParams, Class<T> returnTypeClass) throws PlaidMfaException {
+
+        PlaidHttpRequest request = new PlaidHttpRequest(path, authenticationParams(), timeout);
+
+        for (String param : requestParams.keySet()) {
+            Object value = requestParams.get(param);
+
+            if (value == null) {
+                continue;
+            }
+
+            request.addParameter(param, serialize(value));
+        }
+
+        try {
+            HttpResponseWrapper<T> response = httpDelegate.doPatch(request, returnTypeClass);
 
             T body = response.getResponseBody();
             setAccessToken(body.getAccessToken());
