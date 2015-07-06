@@ -106,7 +106,7 @@ public class DefaultPlaidUserClient implements PlaidUserClient {
 
     @Override
     public AccountsResponse updateMfaAuthStep(String mfa, String type) throws PlaidMfaException {
-        return handleMfaPost("/auth/step", mfa, type, AccountsResponse.class);
+        return handleMfaPatch("/auth/step", mfa, type, AccountsResponse.class);
     }
 
     @Override
