@@ -1,7 +1,5 @@
 package com.plaid.client;
 
-import org.apache.http.impl.client.HttpClientBuilder;
-
 import com.plaid.client.http.ApacheHttpClientHttpDelegate;
 import com.plaid.client.http.WireLogger;
 
@@ -79,9 +77,8 @@ public class PlaidClients {
 
         ApacheHttpClientHttpDelegate httpDelegate;
         if (test) {
-            httpDelegate = new ApacheHttpClientHttpDelegate(uri, HttpClientBuilder.create().disableContentCompression().build());
-        }
-        else {
+            httpDelegate = ApacheHttpClientHttpDelegate.createDefault(uri, true); // disable content compression
+        } else {
             httpDelegate = ApacheHttpClientHttpDelegate.createDefault(uri);
         }
         if (wireLogger != null) {

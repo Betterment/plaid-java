@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import javax.net.ssl.SSLContext;
+
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpMessage;
 import org.apache.http.HttpStatus;
@@ -22,9 +24,12 @@ import org.apache.http.client.methods.HttpPatch;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.ssl.SSLContexts;
 import org.apache.http.util.EntityUtils;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -52,20 +57,49 @@ public class ApacheHttpClientHttpDelegate implements HttpDelegate {
         	LIBRARY_VERSION = "development version";
         }
     }
-    
+
     public static ApacheHttpClientHttpDelegate createDefault(String baseUri) {
-        CloseableHttpClient httpClient = HttpClients.createDefault();
+
+        return createDefault(baseUri, false);
+    }
+
+    public static ApacheHttpClientHttpDelegate createDefault(String baseUri, boolean disableContentCompression) {
+
+        CloseableHttpClient httpClient = createTLSEnabledHttpClient(disableContentCompression);
         return new ApacheHttpClientHttpDelegate(baseUri, httpClient);
     }
-    
+
+    private static CloseableHttpClient createTLSEnabledHttpClient(boolean disableContentCompression) {
+
+        HttpClientBuilder httpClientBuilder = createTLSEnabledHttpClientBuilder();
+        if (disableContentCompression) {
+            httpClientBuilder.disableContentCompression();
+        }
+        return httpClientBuilder.build();
+    }
+
+    private static HttpClientBuilder createTLSEnabledHttpClientBuilder() {
+
+        SSLContext sslContext = SSLContexts.createDefault();
+        SSLConnectionSocketFactory sf = new SSLConnectionSocketFactory(
+                sslContext,
+                new String[] { "TLSv1.1", "TLSv1.2" },
+                null,
+                SSLConnectionSocketFactory.getDefaultHostnameVerifier());
+
+        return HttpClients
+                .custom()
+                .setSSLSocketFactory(sf);
+    }
+
     public void setWireLogger(WireLogger wireLogger) {
 		this.wireLogger = wireLogger;
 	}
-    
+
     public WireLogger getWireLogger() {
 		return wireLogger;
 	}
-    
+
     public <T> HttpResponseWrapper<T> doPost(PlaidHttpRequest request, Class<T> clazz) {
 
         List<NameValuePair> parameters = mapToNvps(request.getParameters());
@@ -103,16 +137,16 @@ public class ApacheHttpClientHttpDelegate implements HttpDelegate {
     @Override
     public <T> HttpResponseWrapper<T> doGet(PlaidHttpRequest request, Class<T> clazz) {
         try {
-            
+
             List<NameValuePair> parameters = mapToNvps(request.getParameters());
-            
+
             URI uri = new URIBuilder(baseUri)
                 .setPath(request.getPath())
                 .addParameters(parameters)
                 .build();
-            
+
             HttpGet get = new HttpGet(uri);
-            
+
             addUserAgent(get);
 
             CloseableHttpResponse response = httpClient.execute(get);
@@ -127,19 +161,19 @@ public class ApacheHttpClientHttpDelegate implements HttpDelegate {
             throw new PlaidClientsideException(e);
         }
     }
-    
+
     public <T> HttpResponseWrapper<T> doDelete(PlaidHttpRequest request, Class<T> clazz) {
         try {
-            
+
             List<NameValuePair> parameters = mapToNvps(request.getParameters());
-            
+
             URI uri = new URIBuilder(baseUri)
                 .setPath(request.getPath())
                 .addParameters(parameters)
                 .build();
-            
+
             HttpDelete delete = new HttpDelete(uri);
-            
+
             addUserAgent(delete);
 
             CloseableHttpResponse response = httpClient.execute(delete);
@@ -154,7 +188,7 @@ public class ApacheHttpClientHttpDelegate implements HttpDelegate {
             throw new PlaidClientsideException(e);
         }
     }
-    
+
     @Override
     public <T> HttpResponseWrapper<T> doPatch(PlaidHttpRequest request, Class<T> clazz) {
 
@@ -164,11 +198,11 @@ public class ApacheHttpClientHttpDelegate implements HttpDelegate {
             HttpEntity entity = new UrlEncodedFormEntity(parameters, "UTF-8");
             HttpPatch patch = new HttpPatch(baseUri + request.getPath());
             patch.setEntity(entity);
-            
+
             addUserAgent(patch);
 
             CloseableHttpResponse response = httpClient.execute(patch);
-            
+
             return handleResponse(patch, response, clazz);
 
         } catch (UnsupportedEncodingException e) {
@@ -187,31 +221,31 @@ public class ApacheHttpClientHttpDelegate implements HttpDelegate {
 	private <T> HttpResponseWrapper<T> handleResponse(HttpRequestBase request, CloseableHttpResponse response,
             Class<T> clazz) {
 
-    	HttpEntity responseEntity = response.getEntity();      
-		
+    	HttpEntity responseEntity = response.getEntity();
+
         try {
 
         	int statusCode = response.getStatusLine().getStatusCode();
         	JsonNode jsonBody = jsonMapper.readTree(responseEntity.getContent());
-            EntityUtils.consume(responseEntity);                
+            EntityUtils.consume(responseEntity);
 
             wireLog(request, response, jsonBody);
-        	
+
             if (HttpStatus.SC_OK == statusCode) {
-                     
-                T responseBody = jsonMapper.convertValue(jsonBody, clazz);           
+
+                T responseBody = jsonMapper.convertValue(jsonBody, clazz);
                 return HttpResponseWrapper.create(statusCode, responseBody);
-           
+
             } else if (HttpStatus.SC_CREATED == statusCode) {
 
-                MfaResponse mfaResponse = jsonMapper.convertValue(jsonBody, MfaResponse.class);                
+                MfaResponse mfaResponse = jsonMapper.convertValue(jsonBody, MfaResponse.class);
                 throw new PlaidMfaException(mfaResponse, statusCode);
-            
+
             } else if (statusCode >= HttpStatus.SC_BAD_REQUEST) {
 
                 ErrorResponse errorResponse = jsonMapper.convertValue(jsonBody, ErrorResponse.class);
                 throw new PlaidServersideException(errorResponse, statusCode);
-            
+
             } else {
                 throw new PlaidCommunicationsException("Unable to interpret Plaid response");
             }
@@ -220,13 +254,13 @@ public class ApacheHttpClientHttpDelegate implements HttpDelegate {
 
             throw new PlaidCommunicationsException("Unable to interpret Plaid response");
         } finally {
-        	
+
             try {
                 response.close();
             } catch (IOException e) {
-                
+
             }
-        	
+
         }
 
     }
