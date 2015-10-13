@@ -4,8 +4,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -21,25 +19,17 @@ import com.plaid.client.response.MessageResponse;
 import com.plaid.client.response.MfaResponse;
 import com.plaid.client.response.MfaResponse.DeviceChoiceMfaResponse;
 import com.plaid.client.response.MfaResponse.DeviceListMfaResponse;
-import com.plaid.client.response.TransactionsResponse;
 import com.plaid.client.response.PlaidUserResponse;
-import com.plaid.client.response.ErrorResponse;
+import com.plaid.client.response.TransactionsResponse;
 
 public class PlaidUserClientTest {
 
-    private CloseableHttpClient httpClient;
-    private HttpDelegate httpDelegate;
     private PlaidUserClient plaidUserClient;
 
-   // @Rule
-   // public WireMockRule wireMockRule = new WireMockRule(8089);
-
     @Before
-    public  void setup() {
-        //httpClient = HttpClients.createDefault();
-        httpClient = HttpClients.custom().disableContentCompression().build();
-        //httpDelegate = new ApacheHttpClientHttpDelegate("http://localhost:8089", httpClient);
-        httpDelegate = new ApacheHttpClientHttpDelegate("https://tartan.plaid.com", httpClient);
+    public void setup() {
+
+        HttpDelegate httpDelegate = ApacheHttpClientHttpDelegate.createDefault("https://tartan.plaid.com", true); // disable content compression
         plaidUserClient = new DefaultPlaidUserClient.Builder()
                 .withHttpDelegate(httpDelegate)
                 .withClientId("test_id")

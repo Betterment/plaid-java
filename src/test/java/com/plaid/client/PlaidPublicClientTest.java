@@ -6,8 +6,6 @@ import static org.junit.Assert.assertTrue;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -18,24 +16,18 @@ import com.plaid.client.response.Institution;
 import com.plaid.client.response.InstitutionsResponse;
 
 public class PlaidPublicClientTest {
-    
-    private CloseableHttpClient httpClient;
-    private HttpDelegate httpDelegate;
+
     private PlaidPublicClient plaidPublicClient;
-    
-    //@Rule
-    //public WireMockRule wireMockRule = new WireMockRule(8089);
 
     @Before
-    public  void setup() {
-        httpClient = HttpClients.custom().disableContentCompression().build();
-        //httpDelegate = new ApacheHttpClientHttpDelegate("http://localhost:8089", httpClient);
-        HttpDelegate httpDelegate = new ApacheHttpClientHttpDelegate("https://tartan.plaid.com", httpClient);
+    public void setup() {
+
+        HttpDelegate httpDelegate = ApacheHttpClientHttpDelegate.createDefault("https://tartan.plaid.com", true); // disable content compression
         plaidPublicClient = new DefaultPlaidPublicClient.Builder()
                 .withHttpDelegate(httpDelegate)
                 .build();
     }
-    
+
     @Test
     public void testGetAllCategories() {
         CategoriesResponse categoriesResponse = plaidPublicClient.getAllCategories();

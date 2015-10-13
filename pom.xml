@@ -65,7 +65,7 @@
 		<dependency>
 			<groupId>org.apache.httpcomponents</groupId>
 			<artifactId>httpclient</artifactId>
-			<version>4.3.3</version>
+			<version>4.5</version>
 		</dependency>
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
@@ -129,7 +129,7 @@
 			<artifactId>wiremock</artifactId>
 			<version>1.44</version>
 			<scope>test</scope>
-			<!-- Include this if you have dependency conflicts for Guava, Jetty, Jackson 
+			<!-- Include this if you have dependency conflicts for Guava, Jetty, Jackson
 				or Apache HTTP Client -->
 			<classifier>standalone</classifier>
 		</dependency>
