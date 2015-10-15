@@ -197,18 +197,13 @@
 		</plugins>
 	</build>
 
-	<distributionManagement>
-		<snapshotRepository>
-			<id>ossrh</id>
-			<name>Sonatype Nexus snapshot repository</name>
-			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
-		</snapshotRepository>
-		<repository>
-			<id>ossrh</id>
-			<name>Sonatype Nexus release repository</name>
-			<url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-		</repository>
-	</distributionManagement>
+    <distributionManagement>
+        <repository>
+            <id>better-nexus-vendor</id>
+            <name>better-nexus-vendor</name>
+            <url>http://nexus.betterment.com/content/repositories/vendor/</url>
+        </repository>
+    </distributionManagement>
 
 	<profiles>
 		<profile>
