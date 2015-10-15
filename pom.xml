@@ -199,9 +199,9 @@
 
     <distributionManagement>
         <repository>
-            <id>better-nexus-vendor</id>
-            <name>better-nexus-vendor</name>
-            <url>http://nexus.betterment.com/content/repositories/vendor/</url>
+            <id>better-nexus-better</id>
+            <name>better-nexus-better</name>
+            <url>http://nexus.betterment.com/content/repositories/better/</url>
         </repository>
     </distributionManagement>
 
